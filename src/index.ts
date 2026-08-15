@@ -2,6 +2,7 @@ import { Context, Service, Schema } from 'cordis'
 import { WindowsPathUtils } from './path.js'
 import { WindowsProcessManager } from './process.js'
 import { WindowsEncodingUtils } from './encoding.js'
+import { WindowsCommandRunner, CommandExecOptions, CommandExecResult } from './runner.js'
 
 export interface WindowsPlatformConfig {
   /** Force UTF-8 on Windows command execution. Default: true */
@@ -23,26 +24,34 @@ declare module 'cordis' {
 
 /**
  * DeepSeek Harness Windows Platform Compatibility Service.
- * Provides Windows-safe process management, path normalization, and encoding guards.
+ * Provides Windows-safe process management, path normalization, UTF-8 command runner, and encoding guards.
  */
 export class WindowsPlatformService extends Service {
   public path = WindowsPathUtils
   public process = WindowsProcessManager
   public encoding = WindowsEncodingUtils
+  public runner = WindowsCommandRunner
 
   constructor(ctx: Context, private config: WindowsPlatformConfig = {}) {
     super(ctx, 'windows', true)
   }
 
+  /**
+   * Execute command safely with Windows UTF-8 encoding and timeout tree kill guard.
+   */
+  public exec(command: string, options?: CommandExecOptions): Promise<CommandExecResult> {
+    return WindowsCommandRunner.execute(command, options)
+  }
+
   protected start(): void {
     const isWin = process.platform === 'win32'
     this.ctx.logger.info(
-      `[dsh-plugin-windows] Platform patch loaded (OS: ${process.platform}, Windows optimizations: ${isWin ? 'ACTIVE' : 'IDLE'})`
+      `[dsh-plugin-windows] Platform patch active (OS: ${process.platform}, ProcessTreeGuard: ON, UTF-8 Runner: READY)`
     )
   }
 }
 
-export { WindowsPathUtils, WindowsProcessManager, WindowsEncodingUtils }
+export { WindowsPathUtils, WindowsProcessManager, WindowsEncodingUtils, WindowsCommandRunner, CommandExecOptions, CommandExecResult }
 
 export default function apply(ctx: Context, config: WindowsPlatformConfig = {}) {
   ctx.plugin(WindowsPlatformService, config)

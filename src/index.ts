@@ -9,11 +9,14 @@ export interface WindowsPlatformConfig {
   forceUtf8?: boolean
   /** Enable taskkill process tree guard. Default: true */
   enableProcessTreeGuard?: boolean
+  /** Default timeout in milliseconds for command execution */
+  defaultTimeoutMs?: number
 }
 
 export const WindowsPlatformConfig: Schema<WindowsPlatformConfig> = Schema.object({
   forceUtf8: Schema.boolean().default(true).description('Force UTF-8 output encoding for PowerShell / CMD.'),
   enableProcessTreeGuard: Schema.boolean().default(true).description('Use taskkill /T /F for child process tree termination.'),
+  defaultTimeoutMs: Schema.number().default(0).description('Default command timeout in milliseconds (0 for unlimited).'),
 })
 
 declare module 'cordis' {
@@ -24,29 +27,40 @@ declare module 'cordis' {
 
 /**
  * DeepSeek Harness Windows Platform Compatibility Service.
- * Provides Windows-safe process management, path normalization, UTF-8 command runner, and encoding guards.
  */
-export class WindowsPlatformService extends Service {
+export class WindowsPlatformService extends Service<WindowsPlatformConfig> {
   public path = WindowsPathUtils
   public process = WindowsProcessManager
   public encoding = WindowsEncodingUtils
   public runner = WindowsCommandRunner
 
-  constructor(ctx: Context, private config: WindowsPlatformConfig = {}) {
+  constructor(ctx: Context, config: WindowsPlatformConfig = {}) {
     super(ctx, 'windows', true)
+    this.config = config
   }
 
   /**
-   * Execute command safely with Windows UTF-8 encoding and timeout tree kill guard.
+   * Execute command safely, applying configured UTF-8 and process-tree guards.
    */
-  public exec(command: string, options?: CommandExecOptions): Promise<CommandExecResult> {
-    return WindowsCommandRunner.execute(command, options)
+  public exec(command: string, options: CommandExecOptions = {}): Promise<CommandExecResult> {
+    const mergedOptions: CommandExecOptions = {
+      forceUtf8: options.forceUtf8 ?? this.config.forceUtf8 ?? true,
+      enableProcessTreeGuard: options.enableProcessTreeGuard ?? this.config.enableProcessTreeGuard ?? true,
+      timeoutMs: options.timeoutMs ?? (this.config.defaultTimeoutMs || undefined),
+      ...options,
+    }
+    return WindowsCommandRunner.execute(command, mergedOptions)
   }
 
   protected start(): void {
     const isWin = process.platform === 'win32'
+    const treeGuard = this.config.enableProcessTreeGuard ?? true
+    const utf8 = this.config.forceUtf8 ?? true
+
     this.ctx.logger.info(
-      `[dsh-plugin-windows] Platform patch active (OS: ${process.platform}, ProcessTreeGuard: ON, UTF-8 Runner: READY)`
+      `[dsh-plugin-windows] Platform patch active (OS: ${process.platform}, ProcessTreeGuard: ${
+        treeGuard ? 'ON' : 'OFF'
+      }, UTF-8: ${utf8 ? 'ON' : 'OFF'})`
     )
   }
 }

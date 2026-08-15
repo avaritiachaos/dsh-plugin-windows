@@ -10,6 +10,13 @@
     "README.md",
     "LICENSE"
   ],
+  "dsh": {
+    "displayName": "Windows Platform Guard",
+    "description": "Windows cross-platform compatibility, taskkill process tree guard, and path normalizer",
+    "icon": "terminal",
+    "service": "windows",
+    "category": "system"
+  },
   "scripts": {
     "build": "tsc",
     "test": "node --test test/windows.test.mjs"
@@ -18,11 +25,11 @@
     "deepseek",
     "deepseek-harness",
     "dsh",
+    "dsh-plugin",
     "cordis",
     "windows",
     "cross-platform",
-    "process-tree",
-    "path-normalize"
+    "process-tree"
   ],
   "author": "Shion Lab",
   "license": "MIT",
@@ -34,6 +41,7 @@
     "access": "public"
   },
   "peerDependencies": {
+    "@deepseek-ai/dsh": "*",
     "cordis": "^3.0.0"
   },
   "devDependencies": {

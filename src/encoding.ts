@@ -16,11 +16,20 @@ export class WindowsEncodingUtils {
   }
 
   /**
-   * Decode binary buffer from subprocess stdout/stderr without garbled characters.
+   * Decode binary buffer from subprocess stdout/stderr.
+   *
+   * @param encoding WHATWG TextDecoder label, e.g. 'utf-8', 'gbk' (CP936),
+   *                 'windows-1252' (CP1252), 'ibm850' (CP850). Falls back to
+   *                 UTF-8 when the label is unsupported by the runtime.
    */
-  public static decodeBuffer(buffer: Uint8Array | Buffer): string {
+  public static decodeBuffer(buffer: Uint8Array | Buffer, encoding = 'utf-8'): string {
     if (!buffer || buffer.length === 0) return ''
-    const text = this.utf8Decoder.decode(buffer)
+    let text: string
+    try {
+      text = new TextDecoder(encoding, { fatal: false }).decode(buffer)
+    } catch {
+      text = this.utf8Decoder.decode(buffer)
+    }
     return this.normalizeLineEndings(this.stripBom(text))
   }
 }

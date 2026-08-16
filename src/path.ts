@@ -1,5 +1,3 @@
-import * as path from 'node:path'
-
 /**
  * Windows-safe cross-platform path utilities with true UNC & drive preservation.
  */
@@ -15,21 +13,29 @@ export class WindowsPathUtils {
     if (!p) return ''
 
     let isUnc = false
-    let uncPrefix = ''
+    let uncAuthority = ''
 
-    // 1. Extended UNC handling: \\?\UNC\server\share -> //server/share
+    // 1. Extended UNC handling: \\?\UNC\server\share\file -> //server/share/file
     if (p.startsWith('\\\\?\\UNC\\') || p.startsWith('//?/UNC/')) {
       isUnc = true
-      uncPrefix = '//'
-      p = p.slice(8)
+      p = p.slice(8).replace(/\\+/g, '/')
+      const parts = p.split('/')
+      const server = parts[0] || ''
+      const share = parts[1] || ''
+      uncAuthority = `//${server}/${share}`
+      p = parts.slice(2).join('/')
     } else if (p.startsWith('\\\\?\\') || p.startsWith('//?/')) {
       // Extended drive path: \\?\D:\foo -> D:\foo
       p = p.slice(4)
     } else if (p.startsWith('\\\\') || p.startsWith('//')) {
-      // Standard UNC: \\server\share -> //server/share
+      // Standard UNC: \\server\share\file -> //server/share/file
       isUnc = true
-      uncPrefix = '//'
-      p = p.slice(2)
+      p = p.slice(2).replace(/\\+/g, '/')
+      const parts = p.split('/')
+      const server = parts[0] || ''
+      const share = parts[1] || ''
+      uncAuthority = `//${server}/${share}`
+      p = parts.slice(2).join('/')
     }
 
     // 2. Unify slashes to forward slash
@@ -63,7 +69,7 @@ export class WindowsPathUtils {
     const resolved = stack.join('/')
 
     if (isUnc) {
-      return `${uncPrefix}${resolved}`
+      return resolved ? `${uncAuthority}/${resolved}` : uncAuthority
     }
     if (drivePrefix) {
       return `${drivePrefix}/${resolved}`

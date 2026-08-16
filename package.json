@@ -1,6 +1,6 @@
 {
   "name": "@shion-lab/dsh-plugin-windows",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Windows cross-platform compatibility, process tree termination, and path normalization patch for DeepSeek Harness (dsh).",
   "main": "dist/index.js",
@@ -19,8 +19,9 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepare": "tsc",
     "prepack": "tsc",
-    "test": "node --test test/windows.test.mjs"
+    "test": "node --experimental-strip-types --test test/windows.test.mjs"
   },
   "keywords": [
     "deepseek",
